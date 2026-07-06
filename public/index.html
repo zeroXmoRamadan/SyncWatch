@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SyncWatch — watch together</title>
+<link rel="stylesheet" href="style.css?v=3" />
+</head>
+<body>
+
+<div class="reel" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-mark">◎</span> SyncWatch</div>
+  <div class="peer-badge" id="peerBadge" hidden>ID: <span id="myPeerIdShort">—</span></div>
+</header>
+
+<!-- LANDING -->
+<main id="landing" class="screen">
+  <div class="hero">
+    <h1>Press play together.<br>From anywhere.</h1>
+    <p class="hero-sub">Pull a torrent link into a room, invite up to 8 people, and every pause, play and seek stays in sync.</p>
+  </div>
+
+  <div class="cards">
+    <section class="card">
+      <h2><span class="card-index">01</span> Create a room</h2>
+      <label>Your name
+        <input id="createName" type="text" maxlength="24" placeholder="e.g. Sam" />
+      </label>
+      <label>Room name
+        <input id="roomName" type="text" maxlength="30" placeholder="e.g. Friday Movie Night" />
+      </label>
+      <div class="row">
+        <label class="grow">Playback Source
+          <select id="roomModeSelect">
+            <option value="torrent" selected>Stream Torrent</option>
+            <option value="local">Sync Local File</option>
+          </select>
+        </label>
+      </div>
+      <div id="torrentInputWrapper">
+        <label>Torrent magnet link
+          <input id="magnetLink" type="text" placeholder="magnet:?xt=urn:btih:..." />
+        </label>
+        <p class="hint-note" style="color: var(--muted); font-size: .8rem; margin: 4px 0 10px;">Note: MKV files are not supported.</p>
+      </div>
+      <div id="localInputWrapper" hidden>
+        <label>Select local video file
+          <input id="localVideoInput" type="file" accept="video/mp4,video/webm" style="display:none;" />
+          <button id="chooseLocalBtn" class="btn small" style="align-self: flex-start;" type="button">Choose Local File</button>
+        </label>
+        <span id="localFileNameLanding" class="hint-static">No file chosen</span>
+        <p class="hint-note" style="color: var(--muted); font-size: .8rem; margin: 4px 0 10px;">Note: MKV files are not supported.</p>
+      </div>
+      <div class="row">
+        <label class="grow">Max members
+          <select id="maxMembers">
+            <option value="2">2</option><option value="3">3</option><option value="4">4</option>
+            <option value="5">5</option><option value="6">6</option><option value="7">7</option>
+            <option value="8" selected>8</option>
+          </select>
+        </label>
+        <label class="grow">Password <span class="optional">(optional)</span>
+          <input id="roomPassword" type="password" placeholder="Leave blank for none" />
+        </label>
+      </div>
+      <button id="createRoomBtn" class="btn primary">Create room</button>
+      <p class="hint" id="createHint"></p>
+    </section>
+
+    <section class="card">
+      <h2><span class="card-index">02</span> Join a room</h2>
+      <label>Your name
+        <input id="joinName" type="text" maxlength="24" placeholder="e.g. Alex" />
+      </label>
+      <label>Room code
+        <input id="joinCode" type="text" placeholder="Paste the code you were sent" />
+      </label>
+      <label>Password <span class="optional">(if the room has one)</span>
+        <input id="joinPassword" type="password" placeholder="Leave blank if none" />
+      </label>
+      <button id="joinRoomBtn" class="btn secondary">Join room</button>
+      <p class="hint" id="joinHint"></p>
+    </section>
+  </div>
+
+  <p class="footnote">Runs entirely between members' browsers — no video ever touches a central server. Best on regular home networks.</p>
+
+  <div style="margin-top: 30px;">
+    <details class="card" style="background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 22px;">
+      <summary style="font-size: .9rem; font-weight: 600; cursor: pointer; color: var(--muted); outline:none; user-select: none;">
+        ⚙️ Advanced WebRTC Settings (STUN/TURN)
+      </summary>
+      <div style="margin-top: 12px; display:flex; flex-direction:column; gap:10px;">
+        <p style="margin:0; font-size:.8rem; color: var(--muted);">
+          To connect with peers outside your local network (across different ISPs or behind strict firewalls), you may need a custom STUN/TURN configuration.
+        </p>
+        <label>ICE Servers Config (JSON Array)
+          <textarea id="iceServersInput" rows="4" style="background: var(--panel-2); border: 1px solid var(--line); color: var(--text); padding: 10px; border-radius: 8px; font-family: monospace; font-size: .8rem; resize: vertical;" placeholder='[
+  {"urls": "stun:stun.l.google.com:19302"},
+  {"urls": "turn:global.turn.metered.ca:443?transport=tcp", "username": "...", "credential": "..."}
+]'></textarea>
+        </label>
+        <button id="saveIceBtn" class="btn small" type="button" style="align-self: flex-start;">Save Configuration</button>
+        <span id="iceSaveHint" class="hint" style="font-size: .8rem; margin: 0;"></span>
+      </div>
+    </details>
+  </div>
+</main>
+
+<!-- ROOM -->
+<main id="room" class="screen" hidden>
+  <div class="room-layout">
+    <div class="stage">
+      <div class="stage-top">
+        <div>
+          <h1 id="roomTitle">Room</h1>
+          <p class="stage-status" id="torrentStatus">Waiting for host to load the torrent…</p>
+        </div>
+        <button id="shareBtn" class="btn small">Copy invite</button>
+      </div>
+
+      <div id="localFilePrompt" style="border:1px solid var(--line); padding: 16px; border-radius: var(--radius); margin-bottom: 16px; background: var(--panel); display:flex; flex-direction:column; gap:8px;" hidden>
+        <p style="margin:0; font-size:.9rem; color: var(--accent);">Local file mode active. Please select your copy of: <strong id="promptFileName">...</strong></p>
+        <input id="memberLocalInput" type="file" accept="video/mp4,video/webm" style="display:none;" />
+        <button id="chooseMemberLocalBtn" class="btn small" style="align-self: flex-start;" type="button">Choose Local File</button>
+        <p class="hint-note" style="color: var(--muted); font-size: .8rem; margin: 4px 0 0;">Note: MKV files are not supported.</p>
+      </div>
+
+      <div id="videoPlayerContainer">
+        <div class="video-wrap" style="border: none; border-radius: 0; overflow: visible;">
+          <video id="player" controls playsinline></video>
+          <div class="video-overlay" id="videoOverlay">
+            <p id="overlayText">Fetching the torrent…</p>
+          </div>
+        </div>
+
+        <div id="customPlayerControls" hidden>
+          <button id="customSubtitlesBtn" class="btn" type="button">Hide Subs</button>
+          <button id="customMuteBtn" class="btn" type="button">Mute</button>
+          <button id="customFullscreenBtn" class="btn" type="button">Fullscreen</button>
+        </div>
+      </div>
+
+      <div class="chat-panel">
+        <h2>Chat</h2>
+        <div id="chatMessages" class="chat-messages"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" type="text" placeholder="Say something…" maxlength="240" autocomplete="off" />
+          <button type="submit" class="btn small">Send</button>
+        </form>
+        <p class="chat-disabled-note" id="chatDisabledNote" hidden>The host has muted your chat.</p>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <h2>Members <span id="memberCount">(1/8)</span></h2>
+      <p class="hint-static" id="permHint" hidden>Tap the icons to toggle a member's playback control and chat access.</p>
+      <ul id="memberList" class="member-list"></ul>
+
+      <div class="host-only" id="hostControls" hidden>
+        <h2>Host controls</h2>
+        <label>Playback Source
+          <select id="hostSourceSelect">
+            <option value="torrent" selected>Torrent Magnet</option>
+            <option value="local">Local Video File</option>
+          </select>
+        </label>
+        
+        <div id="hostTorrentWrapper">
+          <label style="margin-top: 8px;">Change torrent
+            <input id="newMagnet" type="text" placeholder="magnet:?xt=urn:btih:..." />
+          </label>
+          <button id="loadTorrentBtn" class="btn small">Load</button>
+        </div>
+
+        <div id="hostLocalWrapper" hidden>
+          <label style="margin-top: 8px;">Select local video file
+            <input id="hostLocalInput" type="file" accept="video/mp4,video/webm" style="display:none;" />
+            <button id="chooseHostLocalBtn" class="btn small" style="align-self: flex-start;" type="button">Choose Local File</button>
+          </label>
+          <span id="hostLocalFileName" class="hint-static">No file chosen</span>
+          <p class="hint-note" style="color: var(--muted); font-size: .8rem; margin: 4px 0 0;">Note: MKV files are not supported.</p>
+        </div>
+
+        <label style="margin-top: 12px;">Add subtitles (.vtt, .srt)
+          <input id="subFileInput" type="file" accept=".vtt,.srt" style="display:none;" />
+          <button id="uploadSubBtn" class="btn small" type="button">Choose Subtitle File</button>
+        </label>
+        <span id="subFileName" class="hint-static">No subtitle file loaded</span>
+      </div>
+
+      <button id="leaveBtn" class="btn ghost full">Leave room</button>
+    </aside>
+  </div>
+</main>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="app.js?v=3"></script>
+</body>
+</html>
