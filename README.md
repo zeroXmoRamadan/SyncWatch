@@ -37,8 +37,8 @@
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/zeroXmoRamadan/syncwatch.git
-   cd syncwatch
+   git clone https://github.com/zeroXmoRamadan/SyncWatch.git
+   cd SyncWatch
    ```
 
 2. **Install dependencies**
@@ -62,7 +62,7 @@
 ## Project Structure
 
 ```
-syncwatch/
+SyncWatch/
 ├── README.md              # Project documentation
 ├── server.js              # Express video streaming & WebTorrent download server
 ├── package.json           # Dependencies and scripts
