@@ -42,8 +42,8 @@
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/zeroXmoRamadan/syncwatch.git
-   cd syncwatch
+   git clone https://github.com/zeroXmoRamadan/SyncWatch.git
+   cd SyncWatch
    ```
 
 2. **Install dependencies**
@@ -70,8 +70,7 @@
 
 ```
 syncwatch/
-├── README.md              # Markdown project documentation
-├── README.txt             # Plaintext local setup guide
+├── README.md              # Project documentation
 ├── server.js              # Express video streaming & WebTorrent download server
 ├── package.json           # Dependencies and scripts
 ├── downloads/             # Directory where downloaded torrents are stored
