@@ -17,7 +17,10 @@
   let playbackMode = 'torrent'; // 'torrent' or 'local'
   let localVideoFile = null;    // local File object selected
   let expectedFileName = '';    // expected filename of the sync session
-  let lastApprovedState = { paused: true, time: 0 };
+  let lastApprovedState = { paused: true, time: 0, timestamp: Date.now() };
+  let selectedAudioTrackIndex = 0; // host's selected audio track index
+  let hostAudioTrackIndex = null;   // host's audio track index on member clients
+  let initialSyncPending = true;    // flag set when member joins or loads a new source
   let isFullscreenActive = false;
 
   const player = $('player');
@@ -62,6 +65,9 @@
     $('myPeerIdShort').textContent = roomCode;
     $('hostControls').hidden = !isHost;
     $('permHint').hidden = !isHost;
+    if (!isHost) {
+      hideTrackSelection();
+    }
   }
 
   // ---------- Local torrent server ----------
@@ -71,6 +77,7 @@
     $('torrentStatus').textContent = 'Loading torrent…';
     setTrack(null);
     activeSubtitles = null;
+    hideTrackSelection();
     console.log('Requesting local server to load torrent...');
     try {
       const res = await fetch('/api/torrent', {
@@ -106,10 +113,8 @@
 
   function setTrack(vttContent, fileName) {
     $('customSubtitlesBtn').textContent = vttContent ? 'Hide Subs' : 'No Subs';
-    let track = player.querySelector('track');
-    if (track) {
-      track.remove();
-    }
+    let oldTrack = player.querySelector('track');
+    if (oldTrack) oldTrack.remove();
     
     if (player._subUrl) {
       URL.revokeObjectURL(player._subUrl);
@@ -126,18 +131,68 @@
     const url = URL.createObjectURL(blob);
     player._subUrl = url;
 
-    track = document.createElement('track');
+    const track = document.createElement('track');
     track.kind = 'subtitles';
     track.label = fileName ? fileName.replace(/\.[^/.]+$/, "") : 'Subtitles';
     track.srclang = 'en';
     track.src = url;
     track.default = true;
+
     player.appendChild(track);
 
-    // Ensure the track displays
-    try {
-      player.textTracks[0].mode = 'showing';
-    } catch (e) {}
+    const enableTrack = () => {
+      try {
+        for (let i = 0; i < player.textTracks.length; i++) {
+          player.textTracks[i].mode = 'showing';
+          player.textTracks[i]._syncwatchExternal = true;
+        }
+      } catch (e) {}
+    };
+
+    enableTrack();
+    track.addEventListener('load', enableTrack);
+    setTimeout(enableTrack, 100);
+    setTimeout(enableTrack, 500);
+  }
+
+  function saveHostState(state) {
+    if (!state) return;
+    let targetTime = state.time || 0;
+    if (!state.paused && state.timestamp) {
+      const elapsed = (Date.now() - state.timestamp) / 1000;
+      targetTime += elapsed;
+    }
+    lastApprovedState = {
+      paused: !!state.paused,
+      time: Math.max(0, targetTime),
+      timestamp: Date.now()
+    };
+    if (state.audioTrackIndex != null) {
+      hostAudioTrackIndex = state.audioTrackIndex;
+    }
+    console.log('Saved host state:', lastApprovedState, 'audioTrackIndex:', hostAudioTrackIndex);
+  }
+
+  function applyAudioTrack(idx) {
+    if (idx == null) return;
+    const audioTracks = player.audioTracks;
+    if (!audioTracks || audioTracks.length <= idx) return;
+    for (let i = 0; i < audioTracks.length; i++) {
+      audioTracks[i].enabled = (i === idx);
+    }
+    console.log('Applied audio track index:', idx);
+  }
+
+  function resetMediaTracksToDefault() {
+    activeSubtitles = null;
+    setTrack(null);
+    selectedAudioTrackIndex = 0;
+    hostAudioTrackIndex = null;
+    hideTrackSelection();
+    if (isHost) {
+      $('subFileName').textContent = 'No subtitle loaded';
+    }
+    console.log('Reset subtitle and audio track selections to default.');
   }
 
   function loadLocalFile(file) {
@@ -154,9 +209,121 @@
     player._localUrl = url;
     player.src = url;
     
-    setTrack(null);
-    activeSubtitles = null;
+    // Preserve existing activeSubtitles if available (e.g. sent from host to member)
+    if (activeSubtitles) {
+      setTrack(activeSubtitles.text, activeSubtitles.name);
+    } else {
+      setTrack(null);
+    }
+    hideTrackSelection();
+
+    // Inspect audio tracks (host only) and apply host choice (member)
+    player.addEventListener('loadedmetadata', () => {
+      if (isHost) {
+        detectAndPopulateTracks();
+      } else {
+        hideTrackSelection();
+        if (hostAudioTrackIndex != null) {
+          applyAudioTrack(hostAudioTrackIndex);
+        }
+      }
+      if (activeSubtitles) {
+        setTrack(activeSubtitles.text, activeSubtitles.name);
+      }
+    }, { once: true });
+
+    // Sync member playback position and subtitles as soon as video can play
+    player.addEventListener('canplay', () => {
+      if (!isHost && initialSyncPending) {
+        initialSyncPending = false;
+        let syncTime = lastApprovedState.time;
+        if (!lastApprovedState.paused && lastApprovedState.timestamp) {
+          const elapsed = (Date.now() - lastApprovedState.timestamp) / 1000;
+          syncTime += elapsed;
+        }
+        console.log('Syncing newly loaded local file to host time:', syncTime, 'paused:', lastApprovedState.paused);
+        applyRemote({
+          type: lastApprovedState.paused ? 'pause' : 'play',
+          time: Math.max(0, syncTime)
+        });
+        if (hostAudioTrackIndex != null) {
+          applyAudioTrack(hostAudioTrackIndex);
+        }
+        if (activeSubtitles) {
+          setTrack(activeSubtitles.text, activeSubtitles.name);
+        }
+      }
+    }, { once: true });
   }
+
+  // ---------- Track Selection (local files only) ----------
+  // Labels/languages the browser fills in from MP4 handler metadata that are meaningless
+  const JUNK_LABELS = ['soundhandler', 'videohandler', 'subtitlehandler', 'handler', 'mediahandler'];
+  const JUNK_LANGS = ['und', 'zxx', ''];
+
+  function cleanLabel(raw) {
+    if (!raw) return '';
+    return JUNK_LABELS.includes(raw.toLowerCase().replace(/[\s_-]/g, '')) ? '' : raw;
+  }
+  function cleanLang(raw) {
+    if (!raw) return '';
+    return JUNK_LANGS.includes(raw.toLowerCase()) ? '' : raw;
+  }
+
+  function hideTrackSelection() {
+    $('trackSelectionPanel').hidden = true;
+    $('audioTrackGroup').hidden = true;
+    $('audioTrackSelect').innerHTML = '';
+  }
+
+  function formatTrackName(index, rawLabel, rawLang) {
+    const label = cleanLabel(rawLabel);
+    const lang = cleanLang(rawLang);
+    if (label && lang) return `Track ${index + 1} — ${label} (${lang})`;
+    if (label) return `Track ${index + 1} — ${label}`;
+    if (lang) return `Track ${index + 1} (${lang})`;
+    return `Track ${index + 1}`;
+  }
+
+  function detectAndPopulateTracks() {
+    if (!isHost || playbackMode !== 'local') {
+      hideTrackSelection();
+      return;
+    }
+
+    const audioTracks = player.audioTracks;
+    if (audioTracks && audioTracks.length > 1) {
+      const sel = $('audioTrackSelect');
+      sel.innerHTML = '';
+      for (let i = 0; i < audioTracks.length; i++) {
+        const t = audioTracks[i];
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = formatTrackName(i, t.label, t.language);
+        if (i === selectedAudioTrackIndex || t.enabled) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      $('audioTrackGroup').hidden = false;
+      $('trackSelectionPanel').hidden = false;
+      console.log(`Host detected ${audioTracks.length} audio tracks.`);
+    } else {
+      hideTrackSelection();
+    }
+  }
+
+  // Audio track switch handler (host only)
+  $('audioTrackSelect').addEventListener('change', (e) => {
+    if (!isHost) return;
+    const audioTracks = player.audioTracks;
+    if (!audioTracks) return;
+    const selectedIdx = parseInt(e.target.value, 10);
+    selectedAudioTrackIndex = selectedIdx;
+    for (let i = 0; i < audioTracks.length; i++) {
+      audioTracks[i].enabled = (i === selectedIdx);
+    }
+    console.log('Host switched to audio track:', selectedIdx);
+    relayFromHost({ type: 'audio-track', index: selectedIdx }, null);
+  });
 
   function showLocalFilePrompt(fileName) {
     expectedFileName = fileName;
@@ -348,7 +515,7 @@
         ctrlBtn.type = 'button';
         ctrlBtn.className = 'perm-btn' + (m.canControl ? ' active' : ' off');
         ctrlBtn.title = m.canControl ? 'Can control playback (tap to revoke)' : 'Cannot control playback (tap to allow)';
-        ctrlBtn.textContent = '▶';
+        ctrlBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
         ctrlBtn.addEventListener('click', () => togglePermission(id, 'canControl'));
         btns.appendChild(ctrlBtn);
 
@@ -356,7 +523,7 @@
         chatBtn.type = 'button';
         chatBtn.className = 'perm-btn' + (m.canChat ? ' active' : ' off');
         chatBtn.title = m.canChat ? 'Can chat (tap to mute)' : 'Muted (tap to allow)';
-        chatBtn.textContent = '💬';
+        chatBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>';
         chatBtn.addEventListener('click', () => togglePermission(id, 'canChat'));
         btns.appendChild(chatBtn);
 
@@ -364,7 +531,8 @@
       } else {
         const tag = document.createElement('span');
         tag.className = 'tag';
-        tag.textContent = [m.canControl ? '' : 'no control', m.canChat ? '' : 'muted'].filter(Boolean).join(' · ');
+        const statusStr = [m.canControl ? '' : 'no control', m.canChat ? '' : 'muted'].filter(Boolean).join(' · ');
+        tag.textContent = statusStr ? `guest · ${statusStr}` : 'guest';
         li.appendChild(tag);
       }
       list.appendChild(li);
@@ -466,6 +634,12 @@
         playbackMode: playbackMode,
         expectedFileName: expectedFileName,
         subtitles: activeSubtitles,
+        hostState: {
+          paused: player.paused,
+          time: player.currentTime || 0,
+          timestamp: Date.now(),
+          audioTrackIndex: selectedAudioTrackIndex
+        }
       });
       broadcastMemberList();
       renderMembers();
@@ -535,6 +709,16 @@
           
           playbackMode = msg.playbackMode || 'torrent';
           expectedFileName = msg.expectedFileName || '';
+          initialSyncPending = true;
+
+          if (msg.subtitles) {
+            console.log('Received active subtitles from host:', msg.subtitles.name);
+            activeSubtitles = msg.subtitles;
+          }
+
+          if (msg.hostState) {
+            saveHostState(msg.hostState);
+          }
 
           if (playbackMode === 'local') {
             console.log('Room is in local video file mode. Expected file:', expectedFileName);
@@ -545,10 +729,9 @@
             if (msg.magnet) {
               console.log('Loading torrent from host magnet link...');
               loadTorrentLocally(msg.magnet).then(() => {
-                if (msg.subtitles) {
-                  console.log('Loading subtitles from host...');
-                  activeSubtitles = msg.subtitles;
-                  setTrack(msg.subtitles.text, msg.subtitles.name);
+                if (activeSubtitles) {
+                  console.log('Applying subtitles for torrent mode...');
+                  setTrack(activeSubtitles.text, activeSubtitles.name);
                 }
               });
             }
@@ -577,22 +760,40 @@
           }
           return;
         }
+        if (msg.type === 'audio-track') {
+          hostAudioTrackIndex = msg.index;
+          applyAudioTrack(msg.index);
+          return;
+        }
         if (msg.type === 'source-change') {
           playbackMode = msg.playbackMode;
           expectedFileName = msg.expectedFileName || '';
+          initialSyncPending = true;
+          if (msg.subtitles) {
+            activeSubtitles = msg.subtitles;
+          } else {
+            resetMediaTracksToDefault();
+          }
+          if (msg.hostState) {
+            saveHostState(msg.hostState);
+          }
           if (playbackMode === 'local') {
             showLocalFilePrompt(expectedFileName);
           } else {
             $('localFilePrompt').hidden = true;
             if (msg.magnet) {
               loadTorrentLocally(msg.magnet).then(() => {
-                if (msg.subtitles) {
-                  activeSubtitles = msg.subtitles;
-                  setTrack(msg.subtitles.text, msg.subtitles.name);
+                if (activeSubtitles) {
+                  setTrack(activeSubtitles.text, activeSubtitles.name);
                 }
               });
             }
           }
+          return;
+        }
+        if (msg.type === 'host-left') {
+          player.pause();
+          $('hostLeftModal').hidden = false;
           return;
         }
         if (msg.type === 'reload') {
@@ -600,7 +801,13 @@
         }
       });
 
-      conn.on('close', () => setHint('joinHint', 'Disconnected from host.', true));
+      conn.on('close', () => {
+        setHint('joinHint', 'Disconnected from host.', true);
+        if (!isHost) {
+          player.pause();
+          $('hostLeftModal').hidden = false;
+        }
+      });
     });
 
     peer.on('error', (err) => setHint('joinHint', friendlyPeerError(err), true));
@@ -630,11 +837,19 @@
     const magnet = $('newMagnet').value.trim();
     if (!magnet) return;
     playbackMode = 'torrent';
+    resetMediaTracksToDefault();
     loadTorrentLocally(magnet);
     relayFromHost({
       type: 'source-change',
       playbackMode: 'torrent',
-      magnet: magnet
+      magnet: magnet,
+      subtitles: null,
+      hostState: {
+        paused: true,
+        time: 0,
+        timestamp: Date.now(),
+        audioTrackIndex: 0
+      }
     }, null);
   });
 
@@ -702,11 +917,9 @@
       return;
     }
     localVideoFile = file;
+    initialSyncPending = true;
     loadLocalFile(file);
     $('localFilePrompt').hidden = true;
-    if (activeSubtitles) {
-      setTrack(activeSubtitles.text, activeSubtitles.name);
-    }
   });
 
   // Host controls source changing
@@ -715,6 +928,7 @@
     const isLocal = mode === 'local';
     $('hostTorrentWrapper').hidden = isLocal;
     $('hostLocalWrapper').hidden = !isLocal;
+    resetMediaTracksToDefault();
   });
 
   $('chooseHostLocalBtn').addEventListener('click', () => {
@@ -729,6 +943,7 @@
       e.target.value = '';
       return;
     }
+    resetMediaTracksToDefault();
     localVideoFile = file;
     expectedFileName = file.name;
     $('hostLocalFileName').textContent = file.name;
@@ -738,7 +953,14 @@
     relayFromHost({
       type: 'source-change',
       playbackMode: 'local',
-      expectedFileName: file.name
+      expectedFileName: file.name,
+      subtitles: null,
+      hostState: {
+        paused: true,
+        time: 0,
+        timestamp: Date.now(),
+        audioTrackIndex: 0
+      }
     }, null);
   });
 
@@ -768,15 +990,22 @@
     }
   });
 
-  // Track mouse movement to auto-hide custom controls in fullscreen/hover
+  // Track mouse movement to auto-hide custom controls after inactivity
   let mouseTimer = null;
-  $('videoPlayerContainer').addEventListener('mousemove', () => {
-    const container = $('videoPlayerContainer');
-    container.classList.add('mouse-moving');
+  const playerContainer = $('videoPlayerContainer');
+  const showControlsTemporarily = () => {
+    playerContainer.classList.add('mouse-moving');
     clearTimeout(mouseTimer);
     mouseTimer = setTimeout(() => {
-      container.classList.remove('mouse-moving');
-    }, 2000);
+      playerContainer.classList.remove('mouse-moving');
+    }, 2500);
+  };
+
+  playerContainer.addEventListener('mousemove', showControlsTemporarily);
+  playerContainer.addEventListener('mouseenter', showControlsTemporarily);
+  playerContainer.addEventListener('mouseleave', () => {
+    clearTimeout(mouseTimer);
+    playerContainer.classList.remove('mouse-moving');
   });
 
   // Intercept and redirect native player fullscreen events to the container
@@ -842,5 +1071,82 @@
     }
   });
 
-  $('leaveBtn').addEventListener('click', () => window.location.reload());
+  // ---------- Page Refresh & Reload Protection ----------
+  let userIsLeavingIntentional = false;
+
+  // Block keyboard refresh shortcuts (F5, Ctrl+R, Cmd+R, Ctrl+F5)
+  window.addEventListener('keydown', (e) => {
+    const isRefreshKey = e.key === 'F5' || (e.key.toLowerCase() === 'r' && (e.ctrlKey || e.metaKey));
+    if (isRefreshKey) {
+      const isRoomActive = !$('room').hidden;
+      if (isRoomActive) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.warn('SyncWatch blocked page refresh shortcut during an active session.');
+      }
+    }
+  });
+
+  // ---------- Host Disconnect Broadcast ----------
+  function handleHostLeave() {
+    if (isHost) {
+      console.log('Host leaving: broadcasting disconnect to all members...');
+      conns.forEach((c) => {
+        try {
+          c.send({ type: 'host-left' });
+          c.close();
+        } catch (err) {}
+      });
+      conns.clear();
+      if (peer) {
+        try { peer.destroy(); } catch (err) {}
+      }
+    }
+  }
+
+  // Prompt confirmation dialog if user attempts to refresh, close, or navigate away
+  window.addEventListener('beforeunload', (e) => {
+    if (isHost && !userIsLeavingIntentional) {
+      handleHostLeave();
+    }
+    if (userIsLeavingIntentional) return;
+    const isRoomActive = !$('room').hidden;
+    if (isRoomActive) {
+      e.preventDefault();
+      e.returnValue = 'Are you sure you want to leave or reload this SyncWatch room? Your active session will be disconnected.';
+      return e.returnValue;
+    }
+  });
+
+  // ---------- Custom Leave Room Modal ----------
+  const hideLeaveModal = () => {
+    $('leaveModal').hidden = true;
+  };
+
+  const showLeaveModal = () => {
+    $('leaveModal').hidden = false;
+  };
+
+  $('leaveBtn').addEventListener('click', showLeaveModal);
+  $('cancelLeaveBtn').addEventListener('click', hideLeaveModal);
+
+  $('confirmLeaveBtn').addEventListener('click', () => {
+    userIsLeavingIntentional = true;
+    if (isHost) {
+      handleHostLeave();
+    }
+    window.location.reload();
+  });
+
+  $('hostLeftOkBtn').addEventListener('click', () => {
+    userIsLeavingIntentional = true;
+    window.location.reload();
+  });
+
+  // Close modal when clicking outside on overlay background
+  $('leaveModal').addEventListener('click', (e) => {
+    if (e.target === $('leaveModal')) {
+      hideLeaveModal();
+    }
+  });
 })();

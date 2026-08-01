@@ -1,18 +1,19 @@
 ========================================================================
-SYNCWATCH - LOCAL RUN INSTRUCTIONS
+SYNCWATCH - LOCAL RUN INSTRUCTIONS & DOCUMENTATION
 ========================================================================
 
 SyncWatch allows you to watch torrent streams or local video files in
-perfect real-time synchronization with your friends. 
+perfect real-time synchronization with your friends directly peer-to-peer. 
 
 This file details the steps to set up and run the application locally on
-your machine.
+your machine along with key feature guidelines.
 
 ------------------------------------------------------------------------
 1. REQUIREMENTS
 ------------------------------------------------------------------------
 - Node.js version 18 or newer.
-  (If you don't have it in the project directory, download and install it from https://nodejs.org)
+  (Download and install from https://nodejs.org if not already installed)
+- npm version 9 or newer (included with Node.js)
 
 ------------------------------------------------------------------------
 2. QUICK START (RUN LOCALLY)
@@ -60,14 +61,35 @@ you can use local mode:
 5. Playback events (play, pause, seek) will sync instantly with zero server
    bandwidth usage.
 
+C. HOST-ONLY AUDIO TRACK SELECTION (LOCAL FILES ONLY):
+------------------------------------------------------
+If your local video file contains multiple audio tracks:
+1. The host will see an "Audio Track" dropdown inside Host Controls.
+2. Only the room host can switch audio tracks; selections are broadcasted
+   in real time to all room members.
+3. Subtitles are not embedded — use the "Subtitle File" button in Host 
+   Controls to load external .srt or .vtt subtitle files.
+
+Note: Audio track switching requires browser support for the audioTracks API.
+      Safari supports it natively. Chrome/Edge users need to enable the flag:
+      chrome://flags/#enable-experimental-web-platform-features
+      If your browser doesn't support it, the audio dropdown simply won't appear.
+
 ------------------------------------------------------------------------
-4. KEY NOTES & COMPATIBILITY
+4. KEY FEATURES & COMPATIBILITY
 ------------------------------------------------------------------------
+- 3-PANEL CENTERED LAYOUT: Left-side Room Chat (fixed 540px height),
+  centered Video Stage, and right-side Sidebar for Members & Host Controls.
+- MEDIA TRACK RESET: Subtitle and audio track selections automatically 
+  reset to default when the host changes video source or magnet link.
+- INACTIVITY AUTO-HIDE: Video overlay controls and mouse cursor hide 
+  automatically after 2.5 seconds of mouse inactivity.
+- REFRESH & DISCONNECT PROTECTION: Suppresses accidental page reloads (F5/Ctrl+R),
+  provides a custom themed "Leave Room" confirmation modal, and shows a
+  styled "Room Closed" dialog to guests if the host leaves.
 - SUPPORTED FORMATS: Standard MP4 and WebM video files are supported.
-- UNSUPPORTED FORMATS: MKV (.mkv) files are NOT supported. Modern browsers
-  (like Google Chrome) cannot decode the proprietary AC-3/DTS audio codecs
-  commonly found in MKV files, resulting in silent playback. Please use 
-  MP4 or WebM formats.
+- UNSUPPORTED FORMATS: MKV (.mkv) files are NOT supported due to browser 
+  audio codec limitations (AC-3/DTS). Please select MP4 or WebM files.
 
 ------------------------------------------------------------------------
 5. TRAVERSING STRICT FIREWALLS / DIFFERENT NETWORKS (TURN CONFIG)

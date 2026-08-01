@@ -3,200 +3,328 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SyncWatch — watch together</title>
-<link rel="stylesheet" href="style.css?v=3" />
+<title>SyncWatch — Watch Together in Sync</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
 
-<div class="reel" aria-hidden="true"></div>
+<div class="bg-glow" aria-hidden="true"></div>
 
 <header class="topbar">
-  <div class="brand"><span class="brand-mark">◎</span> SyncWatch</div>
-  <div class="peer-badge" id="peerBadge" hidden>ID: <span id="myPeerIdShort">—</span></div>
+  <div class="brand">
+    <span class="brand-icon">◎</span>
+    <span class="brand-name">SyncWatch</span>
+  </div>
+  <div class="peer-badge" id="peerBadge" hidden>
+    <span class="peer-status-dot"></span>
+    <span class="peer-label">CODE:</span>
+    <span id="myPeerIdShort" class="peer-id">—</span>
+  </div>
 </header>
 
 <!-- LANDING -->
 <main id="landing" class="screen">
   <div class="hero">
-    <h1>Press play together.<br>From anywhere.</h1>
-    <p class="hero-sub">Pull a torrent link into a room, invite up to 8 people, and every pause, play and seek stays in sync.</p>
+    <div class="hero-tag"><span class="hero-tag-dot"></span> P2P Synchronized Playback</div>
+    <h1>Press play together.<br><span class="gradient-text">From anywhere.</span></h1>
+    <p class="hero-sub">Pull a torrent link or local video into a room, invite friends, and stay frame-accurate in sync — no central server needed.</p>
   </div>
 
   <div class="cards">
     <section class="card">
-      <h2><span class="card-index">01</span> Create a room</h2>
-      <label>Your name
+      <div class="card-header">
+        <span class="card-index">01</span>
+        <h2>Create a room</h2>
+      </div>
+
+      <div class="form-group">
+        <label for="createName">Your name</label>
         <input id="createName" type="text" maxlength="24" placeholder="e.g. Sam" />
-      </label>
-      <label>Room name
+      </div>
+
+      <div class="form-group">
+        <label for="roomName">Room title</label>
         <input id="roomName" type="text" maxlength="30" placeholder="e.g. Friday Movie Night" />
-      </label>
-      <div class="row">
-        <label class="grow">Playback Source
-          <select id="roomModeSelect">
-            <option value="torrent" selected>Stream Torrent</option>
-            <option value="local">Sync Local File</option>
-          </select>
-        </label>
       </div>
-      <div id="torrentInputWrapper">
-        <label>Torrent magnet link
-          <input id="magnetLink" type="text" placeholder="magnet:?xt=urn:btih:..." />
-        </label>
-        <p class="hint-note" style="color: var(--muted); font-size: .8rem; margin: 4px 0 10px;">Note: MKV files are not supported.</p>
+
+      <div class="form-group">
+        <label for="roomModeSelect">Playback source</label>
+        <select id="roomModeSelect">
+          <option value="torrent" selected>Stream Torrent Magnet</option>
+          <option value="local">Sync Local Video File</option>
+        </select>
       </div>
-      <div id="localInputWrapper" hidden>
-        <label>Select local video file
+
+      <div id="torrentInputWrapper" class="form-group">
+        <label for="magnetLink">Torrent magnet link</label>
+        <input id="magnetLink" type="text" placeholder="magnet:?xt=urn:btih:..." />
+        <p class="hint-note">Note: Standard MP4 and WebM video files supported.</p>
+        <p class="hint-note warning-text">Warning: MKV files are not supported.</p>
+      </div>
+
+      <div id="localInputWrapper" class="form-group" hidden>
+        <label>Select local video file</label>
+        <div class="file-picker-box">
           <input id="localVideoInput" type="file" accept="video/mp4,video/webm" style="display:none;" />
-          <button id="chooseLocalBtn" class="btn small" style="align-self: flex-start;" type="button">Choose Local File</button>
-        </label>
-        <span id="localFileNameLanding" class="hint-static">No file chosen</span>
-        <p class="hint-note" style="color: var(--muted); font-size: .8rem; margin: 4px 0 10px;">Note: MKV files are not supported.</p>
+          <button id="chooseLocalBtn" class="btn secondary small" type="button">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 2.5H4a2 2 0 0 0-2 2v13.5a2 2 0 0 0 2 2h16Z"/></svg>
+            Choose File
+          </button>
+          <span id="localFileNameLanding" class="file-name-display">No file chosen</span>
+        </div>
+        <p class="hint-note">Note: Standard MP4 and WebM video files supported.</p>
+        <p class="hint-note warning-text">Warning: MKV files are not supported.</p>
       </div>
+
       <div class="row">
-        <label class="grow">Max members
+        <div class="form-group grow">
+          <label for="maxMembers">Max members</label>
           <select id="maxMembers">
             <option value="2">2</option><option value="3">3</option><option value="4">4</option>
             <option value="5">5</option><option value="6">6</option><option value="7">7</option>
             <option value="8" selected>8</option>
           </select>
-        </label>
-        <label class="grow">Password <span class="optional">(optional)</span>
-          <input id="roomPassword" type="password" placeholder="Leave blank for none" />
-        </label>
+        </div>
+        <div class="form-group grow">
+          <label for="roomPassword">Password <span class="optional">(optional)</span></label>
+          <input id="roomPassword" type="password" placeholder="None" />
+        </div>
       </div>
-      <button id="createRoomBtn" class="btn primary">Create room</button>
+
+      <button id="createRoomBtn" class="btn primary full">Create Room</button>
       <p class="hint" id="createHint"></p>
     </section>
 
     <section class="card">
-      <h2><span class="card-index">02</span> Join a room</h2>
-      <label>Your name
+      <div class="card-header">
+        <span class="card-index">02</span>
+        <h2>Join a room</h2>
+      </div>
+
+      <div class="form-group">
+        <label for="joinName">Your name</label>
         <input id="joinName" type="text" maxlength="24" placeholder="e.g. Alex" />
-      </label>
-      <label>Room code
-        <input id="joinCode" type="text" placeholder="Paste the code you were sent" />
-      </label>
-      <label>Password <span class="optional">(if the room has one)</span>
+      </div>
+
+      <div class="form-group">
+        <label for="joinCode">Room code</label>
+        <input id="joinCode" type="text" placeholder="Paste 6-character room code" />
+      </div>
+
+      <div class="form-group">
+        <label for="joinPassword">Password <span class="optional">(if protected)</span></label>
         <input id="joinPassword" type="password" placeholder="Leave blank if none" />
-      </label>
-      <button id="joinRoomBtn" class="btn secondary">Join room</button>
+      </div>
+
+      <button id="joinRoomBtn" class="btn secondary full">Join Room</button>
       <p class="hint" id="joinHint"></p>
     </section>
   </div>
 
-  <p class="footnote">Runs entirely between members' browsers — no video ever touches a central server. Best on regular home networks.</p>
+  <p class="footnote">
+    <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Runs peer-to-peer directly between members' browsers — no video content touches any central server.
+  </p>
 
-  <div style="margin-top: 30px;">
-    <details class="card" style="background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 22px;">
-      <summary style="font-size: .9rem; font-weight: 600; cursor: pointer; color: var(--muted); outline:none; user-select: none;">
-        ⚙️ Advanced WebRTC Settings (STUN/TURN)
+  <div class="webrtc-config-wrapper">
+    <details class="card webrtc-card">
+      <summary class="webrtc-summary">
+        <span class="webrtc-title">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Advanced WebRTC Settings (STUN / TURN)
+        </span>
+        <svg class="icon webrtc-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
       </summary>
-      <div style="margin-top: 12px; display:flex; flex-direction:column; gap:10px;">
-        <p style="margin:0; font-size:.8rem; color: var(--muted);">
-          To connect with peers outside your local network (across different ISPs or behind strict firewalls), you may need a custom STUN/TURN configuration.
+      <div class="webrtc-content">
+        <p class="hint-note">
+          Required for connecting across different networks, strict firewalls, or symmetric NATs.
         </p>
-        <label>ICE Servers Config (JSON Array)
-          <textarea id="iceServersInput" rows="4" style="background: var(--panel-2); border: 1px solid var(--line); color: var(--text); padding: 10px; border-radius: 8px; font-family: monospace; font-size: .8rem; resize: vertical;" placeholder='[
+        <div class="form-group">
+          <label for="iceServersInput">ICE Servers Config (JSON Array)</label>
+          <textarea id="iceServersInput" rows="4" placeholder='[
   {"urls": "stun:stun.l.google.com:19302"},
   {"urls": "turn:global.turn.metered.ca:443?transport=tcp", "username": "...", "credential": "..."}
 ]'></textarea>
-        </label>
-        <button id="saveIceBtn" class="btn small" type="button" style="align-self: flex-start;">Save Configuration</button>
-        <span id="iceSaveHint" class="hint" style="font-size: .8rem; margin: 0;"></span>
+        </div>
+        <div class="row align-center">
+          <button id="saveIceBtn" class="btn small secondary" type="button">Save Configuration</button>
+          <span id="iceSaveHint" class="hint"></span>
+        </div>
       </div>
     </details>
   </div>
 </main>
 
 <!-- ROOM -->
-<main id="room" class="screen" hidden>
+<main id="room" class="screen room-screen" hidden>
   <div class="room-layout">
+    <!-- LEFT PANEL: Chat -->
+    <div class="chat-panel">
+      <div class="chat-header">
+        <h2>
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          Room Chat
+        </h2>
+      </div>
+      <div id="chatMessages" class="chat-messages"></div>
+      <form id="chatForm" class="chat-form">
+        <input id="chatInput" type="text" placeholder="Type a message…" maxlength="240" autocomplete="off" />
+        <button type="submit" class="btn primary small">Send</button>
+      </form>
+      <p class="chat-disabled-note" id="chatDisabledNote" hidden>The host has muted your chat access.</p>
+    </div>
+
+    <!-- CENTER PANEL: Video Stage -->
     <div class="stage">
       <div class="stage-top">
-        <div>
+        <div class="stage-info">
           <h1 id="roomTitle">Room</h1>
-          <p class="stage-status" id="torrentStatus">Waiting for host to load the torrent…</p>
+          <div class="status-pill">
+            <span class="status-dot pulse"></span>
+            <p class="stage-status" id="torrentStatus">Waiting for host to load video…</p>
+          </div>
         </div>
-        <button id="shareBtn" class="btn small">Copy invite</button>
+        <button id="shareBtn" class="btn small secondary">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+          Copy invite link
+        </button>
       </div>
 
-      <div id="localFilePrompt" style="border:1px solid var(--line); padding: 16px; border-radius: var(--radius); margin-bottom: 16px; background: var(--panel); display:flex; flex-direction:column; gap:8px;" hidden>
-        <p style="margin:0; font-size:.9rem; color: var(--accent);">Local file mode active. Please select your copy of: <strong id="promptFileName">...</strong></p>
-        <input id="memberLocalInput" type="file" accept="video/mp4,video/webm" style="display:none;" />
-        <button id="chooseMemberLocalBtn" class="btn small" style="align-self: flex-start;" type="button">Choose Local File</button>
-        <p class="hint-note" style="color: var(--muted); font-size: .8rem; margin: 4px 0 0;">Note: MKV files are not supported.</p>
+      <div id="localFilePrompt" class="prompt-banner" hidden>
+        <div class="prompt-content">
+          <p class="prompt-text">Local file mode active. Please select your copy of: <strong id="promptFileName">...</strong></p>
+          <div class="file-picker-box compact">
+            <input id="memberLocalInput" type="file" accept="video/mp4,video/webm" style="display:none;" />
+            <button id="chooseMemberLocalBtn" class="btn small primary" type="button">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 2.5H4a2 2 0 0 0-2 2v13.5a2 2 0 0 0 2 2h16Z"/></svg>
+              Choose Local File
+            </button>
+          </div>
+        </div>
       </div>
 
       <div id="videoPlayerContainer">
-        <div class="video-wrap" style="border: none; border-radius: 0; overflow: visible;">
+        <div class="video-wrap">
           <video id="player" controls playsinline></video>
           <div class="video-overlay" id="videoOverlay">
-            <p id="overlayText">Fetching the torrent…</p>
+            <div class="spinner"></div>
+            <p id="overlayText">Fetching torrent stream…</p>
           </div>
         </div>
 
         <div id="customPlayerControls" hidden>
-          <button id="customSubtitlesBtn" class="btn" type="button">Hide Subs</button>
-          <button id="customMuteBtn" class="btn" type="button">Mute</button>
-          <button id="customFullscreenBtn" class="btn" type="button">Fullscreen</button>
+          <button id="customSubtitlesBtn" class="btn player-control-btn" type="button">Hide Subs</button>
+          <button id="customMuteBtn" class="btn player-control-btn" type="button">Mute</button>
+          <button id="customFullscreenBtn" class="btn player-control-btn" type="button">Fullscreen</button>
         </div>
-      </div>
-
-      <div class="chat-panel">
-        <h2>Chat</h2>
-        <div id="chatMessages" class="chat-messages"></div>
-        <form id="chatForm" class="chat-form">
-          <input id="chatInput" type="text" placeholder="Say something…" maxlength="240" autocomplete="off" />
-          <button type="submit" class="btn small">Send</button>
-        </form>
-        <p class="chat-disabled-note" id="chatDisabledNote" hidden>The host has muted your chat.</p>
       </div>
     </div>
 
+    <!-- RIGHT PANEL: Sidebar -->
     <aside class="sidebar">
-      <h2>Members <span id="memberCount">(1/8)</span></h2>
-      <p class="hint-static" id="permHint" hidden>Tap the icons to toggle a member's playback control and chat access.</p>
+      <div class="sidebar-header">
+        <h2>Members <span id="memberCount" class="member-count-badge">(1/8)</span></h2>
+      </div>
+      <p class="hint-static" id="permHint" hidden>Tap controls to grant or revoke member permissions.</p>
       <ul id="memberList" class="member-list"></ul>
 
       <div class="host-only" id="hostControls" hidden>
-        <h2>Host controls</h2>
-        <label>Playback Source
+        <div class="sidebar-section-title">
+          <h2>Host Controls</h2>
+        </div>
+
+        <div class="form-group">
+          <label for="hostSourceSelect">Playback Source</label>
           <select id="hostSourceSelect">
             <option value="torrent" selected>Torrent Magnet</option>
             <option value="local">Local Video File</option>
           </select>
-        </label>
+        </div>
         
-        <div id="hostTorrentWrapper">
-          <label style="margin-top: 8px;">Change torrent
+        <div id="hostTorrentWrapper" class="form-group">
+          <label for="newMagnet">Change Torrent Magnet</label>
+          <div class="input-with-button">
             <input id="newMagnet" type="text" placeholder="magnet:?xt=urn:btih:..." />
-          </label>
-          <button id="loadTorrentBtn" class="btn small">Load</button>
+            <button id="loadTorrentBtn" class="btn small primary">Load</button>
+          </div>
+          <p class="hint-note">Note: Standard MP4 and WebM video files supported.</p>
+          <p class="hint-note warning-text">Warning: MKV files are not supported.</p>
         </div>
 
-        <div id="hostLocalWrapper" hidden>
-          <label style="margin-top: 8px;">Select local video file
+        <div id="hostLocalWrapper" class="form-group" hidden>
+          <label>Select Local Video File</label>
+          <div class="file-picker-box compact">
             <input id="hostLocalInput" type="file" accept="video/mp4,video/webm" style="display:none;" />
-            <button id="chooseHostLocalBtn" class="btn small" style="align-self: flex-start;" type="button">Choose Local File</button>
-          </label>
-          <span id="hostLocalFileName" class="hint-static">No file chosen</span>
-          <p class="hint-note" style="color: var(--muted); font-size: .8rem; margin: 4px 0 0;">Note: MKV files are not supported.</p>
+            <button id="chooseHostLocalBtn" class="btn small secondary" type="button">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 2.5H4a2 2 0 0 0-2 2v13.5a2 2 0 0 0 2 2h16Z"/></svg>
+              Choose File
+            </button>
+            <span id="hostLocalFileName" class="file-name-display">No file chosen</span>
+          </div>
+          <p class="hint-note">Note: Standard MP4 and WebM video files supported.</p>
+          <p class="hint-note warning-text">Warning: MKV files are not supported.</p>
         </div>
 
-        <label style="margin-top: 12px;">Add subtitles (.vtt, .srt)
-          <input id="subFileInput" type="file" accept=".vtt,.srt" style="display:none;" />
-          <button id="uploadSubBtn" class="btn small" type="button">Choose Subtitle File</button>
-        </label>
-        <span id="subFileName" class="hint-static">No subtitle file loaded</span>
+        <!-- Audio Track Selection (Host only) -->
+        <div id="trackSelectionPanel" class="form-group" hidden>
+          <div class="track-select-group" id="audioTrackGroup" hidden>
+            <label for="audioTrackSelect">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              Audio Track
+            </label>
+            <select id="audioTrackSelect"></select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Add Subtitles (.vtt, .srt)</label>
+          <div class="file-picker-box compact">
+            <input id="subFileInput" type="file" accept=".vtt,.srt" style="display:none;" />
+            <button id="uploadSubBtn" class="btn small secondary" type="button">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+              Subtitle File
+            </button>
+            <span id="subFileName" class="file-name-display">No subtitle loaded</span>
+          </div>
+        </div>
       </div>
 
-      <button id="leaveBtn" class="btn ghost full">Leave room</button>
+      <button id="leaveBtn" class="btn ghost full">Leave Room</button>
     </aside>
   </div>
 </main>
 
+<!-- LEAVE ROOM CONFIRMATION MODAL -->
+<div id="leaveModal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-header">
+      <svg class="icon danger-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <h3>Leave Room</h3>
+    </div>
+    <p class="modal-body">Are you sure you want to leave this SyncWatch room? Your active session will be disconnected.</p>
+    <div class="modal-actions">
+      <button id="cancelLeaveBtn" class="btn secondary small" type="button">Cancel</button>
+      <button id="confirmLeaveBtn" class="btn danger-btn small" type="button">Leave Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOST LEFT DISCONNECT MODAL -->
+<div id="hostLeftModal" class="modal-overlay" hidden>
+  <div class="modal-card">
+    <div class="modal-header">
+      <svg class="icon danger-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      <h3>Room Closed</h3>
+    </div>
+    <p class="modal-body">The room host has left the room and ended the session. All members have been disconnected.</p>
+    <div class="modal-actions">
+      <button id="hostLeftOkBtn" class="btn primary small" type="button">Return to Home</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

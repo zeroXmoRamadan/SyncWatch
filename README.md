@@ -1,4 +1,4 @@
-# SyncWatch - Real-Time Synchronized Torrent & Local Video Player
+# SyncWatch — Real-Time Synchronized Torrent & Local Video Player
 
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.19-blue)](https://expressjs.com/)
@@ -10,17 +10,22 @@
 
 ## Overview
 
-**SyncWatch** is a production-ready, peer-to-peer real-time synchronized video playback platform. It enables multiple users to watch videos in perfect synchronization (play, pause, seek) directly in their web browser, using either a BitTorrent magnet link or a synchronized local video file, without relying on a central media relay server.
+**SyncWatch** is a production-ready, peer-to-peer real-time synchronized video playback platform. It enables multiple users to watch videos in perfect frame-accurate synchronization (play, pause, seek) directly in their web browser, using either a BitTorrent magnet link or a synchronized local video file, without relying on a central media relay server.
 
-### Key Features
+---
 
-- **Synchronized Playback (WebRTC)** — Real-time synchronization of play, pause, and seek events directly between members' browsers using PeerJS and WebRTC.
+## Key Features
+
+- **Synchronized Playback (WebRTC)** — Real-time frame-accurate synchronization of play, pause, and seek events directly between members' browsers using PeerJS and WebRTC data channels.
 - **Dual Playback Modes** — Stream video files directly from the BitTorrent network while downloading, or sync a local video file (bypasses torrent streaming entirely with zero server overhead).
-- **Auto-Stop Seeding (100% Download)** — The backend server automatically stops seeding and terminates peer connections as soon as the torrent download reaches 100%, shifting transparently to local disk streaming to conserve upload bandwidth.
-- **P2P Subtitle Sharing** — Support for SRT and VTT subtitles uploaded by the host. SRT files are converted on-the-fly to WebVTT and broadcasted directly to all room members via PeerJS data streams.
-- **Host Controls Protection** — The room creator has full administrative controls, including the ability to toggle playback permissions (allow/deny members from controlling playback) and chat permissions.
-- **Cinematic Controls Overlay** — Custom glassmorphism buttons (Mute, Subtitles, Fullscreen) overlaying the video player that auto-fade after 2 seconds of mouse inactivity.
-- **Fluid Subtitle Sizing** — Netflix-style custom translucent subtitle cues without dark bounding box backdrops, using 4-directional outline text shadows, scaling proportionally across any screen size.
+- **3-Panel Centered Room Layout** — Modern 3-column obsidian interface featuring a left-side Room Chat (`310px`), a centered Video Stage, and a right-side Sidebar (`320px`) for Members & Host Controls.
+- **Host-Only Multi-Track Audio Selection** — When in local file mode, multi-track audio detection is restricted to the host inside Host Controls. Host selection is broadcasted in real time to all room members.
+- **Automatic Media Track Reset** — Subtitles and audio track choices automatically reset to default whenever the host changes the torrent magnet link, local video file, or playback source mode.
+- **Inactivity Controls & Cursor Auto-Hide** — Floating player controls (Subtitles toggle, Mute, Fullscreen) and mouse cursor automatically fade out after 2.5 seconds of mouse inactivity.
+- **Page Refresh Protection & Admin Disconnect** — Suppresses accidental `F5` / `Ctrl+R` reloads, provides a custom themed "Leave Room" confirmation modal, and automatically disconnects all guests with a "Room Closed" dialog if the host leaves.
+- **P2P Subtitle Sharing & Joining Member Sync** — Supports `.srt` and `.vtt` subtitle files uploaded by the host. Subtitles and elapsed video time are automatically synchronized for members joining ongoing rooms.
+- **MKV Compatibility Warnings** — Explicit warning notifications that MKV files are unsupported due to browser audio codec limitations (MP4 and WebM recommended).
+- **Auto-Stop Seeding (100% Download)** — The backend server automatically stops seeding and terminates peer connections as soon as a torrent download reaches 100%, shifting transparently to local disk streaming to conserve upload bandwidth.
 - **Advanced WebRTC Traversal** — Configurable custom STUN/TURN servers (e.g. from Metered.ca or self-hosted COTURN) to traverse strict firewalls and symmetric NATs, saved locally in `localStorage`.
 
 ---
@@ -55,7 +60,9 @@
 
    The app runs on: `http://localhost:4173`
 
-   > 💡 **Note:** Keep the terminal window open while you use the app — closing it stops your local video streaming server.
+   > 💡 **Note:** Keep the terminal window open while watching — closing it stops your local video streaming server.
+
+   > ⚠️ **Audio Track Switching:** The `audioTracks` API is natively supported in Safari. In Chrome/Edge, enable `chrome://flags/#enable-experimental-web-platform-features`. In non-supporting browsers, the audio track dropdown hides gracefully.
 
 ---
 
@@ -63,14 +70,16 @@
 
 ```
 syncwatch/
-├── README.md              # Project documentation
+├── README.md              # Markdown project documentation
+├── README.txt             # Plaintext local setup guide
 ├── server.js              # Express video streaming & WebTorrent download server
 ├── package.json           # Dependencies and scripts
 ├── downloads/             # Directory where downloaded torrents are stored
 └── public/
-    ├── index.html         # User Interface layout and components
-    ├── style.css          # Visual styling, glassmorphic themes, responsive grids
-    └── app.js             # Client-side WebRTC signaling, player sync, and event handlers
+    ├── favicon.svg        # Accent gold vector favicon
+    ├── index.html         # User Interface 3-panel layout and modal dialogs
+    ├── style.css          # Visual styling, glassmorphic obsidian theme, responsive layout
+    └── app.js             # WebRTC signaling, player sync, track reset, and inactivity listeners
 ```
 
 ---
@@ -80,10 +89,10 @@ syncwatch/
 The backend server exposes the following HTTP endpoints:
 
 | Endpoint | Method | Description |
-|----------|--------|-------------|
+| ---------- | -------- | ------------- |
 | `/api/torrent` | POST | Swaps current active torrent session with a new magnet link |
 | `/api/torrent/status` | GET | Returns download progress, peer count, speed, and status |
-| `/stream` | GET | Streams video files from active WebTorrent or local disk using range-requests |
+| `/stream` | GET | Streams video files from active WebTorrent or local disk using HTTP range-requests |
 
 ---
 
@@ -116,4 +125,4 @@ MIT License — Open source and free to use.
 
 ---
 
-**Built with ❤️ by SyncWatch developers.**
+**Built with ❤️ by Mohamed Ramadan.**
