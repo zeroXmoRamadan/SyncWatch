@@ -69,7 +69,7 @@
 ## Project Structure
 
 ```
-syncwatch/
+SyncWatch/
 ├── README.md              # Project documentation
 ├── server.js              # Express video streaming & WebTorrent download server
 ├── package.json           # Dependencies and scripts
