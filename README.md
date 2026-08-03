@@ -81,6 +81,7 @@ SyncWatch/
     ├── favicon.ico        # High-resolution ICO favicon
     ├── favicon.png        # PNG icon asset & header logo image
     ├── SyncWatch-logo-icon.png  # Brand logo source image
+    ├── SyncWatch-banner.jpg  # Banner image for GitHub repo.
     ├── index.html         # User Interface 3-panel layout and modal dialogs
     ├── style.css          # Visual styling, glassmorphic obsidian theme, responsive layout
     └── app.js             # WebRTC signaling, custom controls, player sync, and refresh protection
