@@ -124,10 +124,16 @@ input, select, button, textarea {
   letter-spacing: -0.02em;
 }
 
-.brand-icon {
-  color: var(--accent);
-  font-size: 1.4rem;
-  text-shadow: 0 0 12px var(--accent-glow-strong);
+.brand-logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px var(--accent-glow-strong));
+  transition: transform 0.2s ease;
+}
+
+.brand:hover .brand-logo-img {
+  transform: scale(1.06);
 }
 
 .peer-badge {
@@ -228,6 +234,7 @@ input, select, button, textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
+  align-items: start;
 }
 
 .card {
@@ -502,14 +509,24 @@ select option {
 /* WebRTC Accordion */
 .webrtc-config-wrapper {
   margin-top: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .webrtc-card {
-  padding: 16px 22px;
+  padding: 10px 20px;
+  gap: 0;
+  border-radius: var(--radius);
+  transition: padding 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+details.webrtc-card[open] {
+  padding: 18px 22px;
+  gap: 14px;
 }
 
 .webrtc-summary {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   color: var(--muted);
@@ -520,6 +537,8 @@ select option {
   justify-content: space-between;
   align-items: center;
   list-style: none;
+  padding: 2px 0;
+  transition: color 0.15s ease;
 }
 
 .webrtc-summary::-webkit-details-marker {
@@ -528,6 +547,12 @@ select option {
 
 .webrtc-summary:hover {
   color: var(--text);
+}
+
+.webrtc-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .webrtc-arrow {
@@ -540,20 +565,23 @@ details[open] .webrtc-arrow {
 }
 
 .webrtc-content {
-  margin-top: 16px;
+  margin-top: 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
 }
 
 textarea#iceServersInput {
   font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 0.8rem;
-  line-height: 1.4;
+  font-size: 0.84rem;
+  line-height: 1.45;
   resize: vertical;
   background: var(--bg);
+  min-height: 120px;
+  height: 135px;
+  padding: 10px 12px;
 }
 
 /* ROOM VIEW LAYOUT */
@@ -1129,3 +1157,346 @@ textarea#iceServersInput {
 .btn.danger-btn:hover {
   background: #f06158;
 }
+
+/* ==========================================
+   CUSTOM THEMED UI CONTROLS & SELECTION LISTS
+   ========================================== */
+
+/* --- 1. Playback Source Selection Cards (Landing) --- */
+.source-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.source-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.source-card:hover {
+  background: var(--panel-hover);
+  border-color: var(--line-light);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.source-card.active {
+  background: var(--panel);
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow: 0 0 16px var(--accent-glow), inset 0 0 0 1px var(--accent);
+}
+
+.source-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.source-card.active .source-card-icon {
+  background: rgba(232, 163, 61, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.source-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.source-card-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  color: inherit;
+}
+
+.source-card-desc {
+  font-size: 0.74rem;
+  color: var(--muted-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.source-card.active .source-card-desc {
+  color: var(--muted);
+}
+
+.source-card-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted-dark);
+  transition: all 0.2s ease;
+}
+
+.source-card.active .source-card-indicator {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow-strong);
+}
+
+/* --- 2. Max Members Custom Dropdown (Landing) --- */
+.cards > .card {
+  position: relative;
+  z-index: 2;
+}
+
+.cards > .card:first-child {
+  z-index: 10;
+}
+
+.themed-select-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.themed-select-wrapper.open {
+  z-index: 1000;
+}
+
+.themed-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 11px 14px;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.themed-select-trigger:hover,
+.themed-select-wrapper.open .themed-select-trigger {
+  border-color: var(--accent);
+  background-color: var(--panel);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.themed-select-icon {
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+}
+
+.themed-select-text {
+  flex: 1;
+  text-align: left;
+}
+
+.chevron-icon {
+  color: var(--muted);
+  transition: transform 0.2s ease;
+}
+
+.themed-select-wrapper.open .chevron-icon {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+.themed-select-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  background: var(--panel);
+  border: 1px solid var(--line-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(0, 0, 0, 0.6);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: dropdownFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.themed-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.themed-option:hover {
+  background: var(--panel-hover);
+  color: #ffffff;
+}
+
+.themed-option.active {
+  background: rgba(232, 163, 61, 0.15);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.opt-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted-dark);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.themed-option.active .opt-tag {
+  color: var(--accent);
+  background: rgba(232, 163, 61, 0.2);
+}
+
+/* --- 3. Segmented Control (Host Controls Sidebar) --- */
+.segmented-control {
+  display: flex;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 3px;
+  gap: 4px;
+}
+
+.segment-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: calc(var(--radius) - 3px);
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.segment-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.segment-btn.active {
+  background: var(--panel);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--line-light);
+}
+
+/* --- 4. Themed Audio Track List (Host Controls Sidebar) --- */
+.themed-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.themed-track-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.themed-track-card:hover {
+  background: var(--panel-hover);
+  border-color: var(--line-light);
+}
+
+.themed-track-card.active {
+  background: var(--panel);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.track-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.track-icon {
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.themed-track-card.active .track-icon {
+  color: var(--accent);
+}
+
+.track-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted-dark);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.themed-track-card.active .track-badge {
+  color: var(--accent);
+  background: rgba(232, 163, 61, 0.18);
+  border: 1px solid rgba(232, 163, 61, 0.3);
+}
+
+@media (max-width: 580px) {
+  .source-cards {
+    grid-template-columns: 1fr;
+  }
+}
+

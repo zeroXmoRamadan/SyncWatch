@@ -4,7 +4,10 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SyncWatch — Watch Together in Sync</title>
-<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="shortcut icon" href="favicon.ico?v=3" />
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=3" />
+<link rel="icon" type="image/png" sizes="16x16" href="favicon.png?v=3" />
+<link rel="apple-touch-icon" href="favicon.png?v=3" />
 <link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
@@ -13,7 +16,7 @@
 
 <header class="topbar">
   <div class="brand">
-    <span class="brand-icon">◎</span>
+    <img src="favicon.png" alt="SyncWatch Logo" class="brand-logo-img" />
     <span class="brand-name">SyncWatch</span>
   </div>
   <div class="peer-badge" id="peerBadge" hidden>
@@ -49,8 +52,31 @@
       </div>
 
       <div class="form-group">
-        <label for="roomModeSelect">Playback source</label>
-        <select id="roomModeSelect">
+        <label>Playback source</label>
+        <div class="source-cards" id="landingSourceCards">
+          <button type="button" class="source-card active" data-value="torrent">
+            <div class="source-card-icon">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15-4-4 4-4"/><path d="M14 15l4-4-4-4"/><path d="M2 11h20"/></svg>
+            </div>
+            <div class="source-card-info">
+              <span class="source-card-title">Stream Torrent</span>
+              <span class="source-card-desc">Stream via magnet URI</span>
+            </div>
+            <span class="source-card-indicator"></span>
+          </button>
+
+          <button type="button" class="source-card" data-value="local">
+            <div class="source-card-icon">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 2.5H4a2 2 0 0 0-2 2v13.5a2 2 0 0 0 2 2h16Z"/></svg>
+            </div>
+            <div class="source-card-info">
+              <span class="source-card-title">Local Video File</span>
+              <span class="source-card-desc">Sync MP4/WebM file</span>
+            </div>
+            <span class="source-card-indicator"></span>
+          </button>
+        </div>
+        <select id="roomModeSelect" style="display: none;">
           <option value="torrent" selected>Stream Torrent Magnet</option>
           <option value="local">Sync Local Video File</option>
         </select>
@@ -80,7 +106,25 @@
       <div class="row">
         <div class="form-group grow">
           <label for="maxMembers">Max members</label>
-          <select id="maxMembers">
+          <div class="themed-select-wrapper" id="maxMembersCustom">
+            <button type="button" class="themed-select-trigger" id="maxMembersBtn">
+              <span class="themed-select-icon">
+                <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </span>
+              <span id="maxMembersValLabel" class="themed-select-text">8 Members</span>
+              <svg class="icon chevron-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="themed-select-menu" id="maxMembersMenu" hidden>
+              <div class="themed-option" data-value="2"><span>2 Members</span> <small class="opt-tag">Duo</small></div>
+              <div class="themed-option" data-value="3"><span>3 Members</span></div>
+              <div class="themed-option" data-value="4"><span>4 Members</span> <small class="opt-tag">Small Group</small></div>
+              <div class="themed-option" data-value="5"><span>5 Members</span></div>
+              <div class="themed-option" data-value="6"><span>6 Members</span></div>
+              <div class="themed-option" data-value="7"><span>7 Members</span></div>
+              <div class="themed-option active" data-value="8"><span>8 Members</span> <small class="opt-tag">Max Default</small></div>
+            </div>
+          </div>
+          <select id="maxMembers" style="display: none;">
             <option value="2">2</option><option value="3">3</option><option value="4">4</option>
             <option value="5">5</option><option value="6">6</option><option value="7">7</option>
             <option value="8" selected>8</option>
@@ -142,7 +186,7 @@
         </p>
         <div class="form-group">
           <label for="iceServersInput">ICE Servers Config (JSON Array)</label>
-          <textarea id="iceServersInput" rows="4" placeholder='[
+          <textarea id="iceServersInput" rows="5" placeholder='[
   {"urls": "stun:stun.l.google.com:19302"},
   {"urls": "turn:global.turn.metered.ca:443?transport=tcp", "username": "...", "credential": "..."}
 ]'></textarea>
@@ -235,8 +279,18 @@
         </div>
 
         <div class="form-group">
-          <label for="hostSourceSelect">Playback Source</label>
-          <select id="hostSourceSelect">
+          <label>Playback Source</label>
+          <div class="segmented-control" id="hostSourceSegment">
+            <button type="button" class="segment-btn active" data-value="torrent">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15-4-4 4-4"/><path d="M14 15l4-4-4-4"/><path d="M2 11h20"/></svg>
+              Torrent
+            </button>
+            <button type="button" class="segment-btn" data-value="local">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 1-1.69-.9L8.6 3.3A2 2 0 0 0 6.9 2.5H4a2 2 0 0 0-2 2v13.5a2 2 0 0 0 2 2h16Z"/></svg>
+              Local File
+            </button>
+          </div>
+          <select id="hostSourceSelect" style="display: none;">
             <option value="torrent" selected>Torrent Magnet</option>
             <option value="local">Local Video File</option>
           </select>
@@ -269,11 +323,12 @@
         <!-- Audio Track Selection (Host only) -->
         <div id="trackSelectionPanel" class="form-group" hidden>
           <div class="track-select-group" id="audioTrackGroup" hidden>
-            <label for="audioTrackSelect">
+            <label>
               <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-              Audio Track
+              Audio Tracks
             </label>
-            <select id="audioTrackSelect"></select>
+            <div id="customAudioTrackContainer" class="themed-track-list"></div>
+            <select id="audioTrackSelect" style="display: none;"></select>
           </div>
         </div>
 

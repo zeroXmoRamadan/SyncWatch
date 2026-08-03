@@ -65,6 +65,21 @@
     $('myPeerIdShort').textContent = roomCode;
     $('hostControls').hidden = !isHost;
     $('permHint').hidden = !isHost;
+
+    // Sync sidebar source controls with current playbackMode
+    const hostSourceSegment = $('hostSourceSegment');
+    if (hostSourceSegment) {
+      hostSourceSegment.querySelectorAll('.segment-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.value === playbackMode);
+      });
+    }
+    if ($('hostSourceSelect')) {
+      $('hostSourceSelect').value = playbackMode;
+      const isLocal = playbackMode === 'local';
+      $('hostTorrentWrapper').hidden = isLocal;
+      $('hostLocalWrapper').hidden = !isLocal;
+    }
+
     if (!isHost) {
       hideTrackSelection();
     }
@@ -72,6 +87,7 @@
 
   // ---------- Local torrent server ----------
   async function loadTorrentLocally(magnet) {
+    playbackMode = 'torrent';
     overlay.hidden = false;
     overlayText.textContent = 'Fetching the torrent…';
     $('torrentStatus').textContent = 'Loading torrent…';
@@ -93,6 +109,17 @@
       }
       console.log('Torrent loaded successfully! Setting video player stream source.');
       player.src = '/stream';
+
+      const checkTracks = () => {
+        if (isHost) {
+          detectAndPopulateTracks();
+        }
+      };
+      if (player.readyState >= 1) {
+        checkTracks();
+      }
+      player.addEventListener('loadedmetadata', checkTracks, { once: true });
+
       startStatusPoll();
     } catch (e) {
       console.error('Connection to local server failed:', e);
@@ -197,6 +224,7 @@
 
   function loadLocalFile(file) {
     console.log('Loading local video file source:', file.name);
+    playbackMode = 'local';
     overlay.hidden = true;
     $('torrentStatus').textContent = `Local File: ${file.name}`;
     
@@ -217,8 +245,7 @@
     }
     hideTrackSelection();
 
-    // Inspect audio tracks (host only) and apply host choice (member)
-    player.addEventListener('loadedmetadata', () => {
+    const checkTracks = () => {
       if (isHost) {
         detectAndPopulateTracks();
       } else {
@@ -227,10 +254,12 @@
           applyAudioTrack(hostAudioTrackIndex);
         }
       }
-      if (activeSubtitles) {
-        setTrack(activeSubtitles.text, activeSubtitles.name);
-      }
-    }, { once: true });
+    };
+
+    if (player.readyState >= 1) {
+      checkTracks();
+    }
+    player.addEventListener('loadedmetadata', checkTracks, { once: true });
 
     // Sync member playback position and subtitles as soon as video can play
     player.addEventListener('canplay', () => {
@@ -274,6 +303,8 @@
     $('trackSelectionPanel').hidden = true;
     $('audioTrackGroup').hidden = true;
     $('audioTrackSelect').innerHTML = '';
+    const container = $('customAudioTrackContainer');
+    if (container) container.innerHTML = '';
   }
 
   function formatTrackName(index, rawLabel, rawLang) {
@@ -285,14 +316,51 @@
     return `Track ${index + 1}`;
   }
 
+  function renderCustomAudioTracks(audioTracks) {
+    const container = $('customAudioTrackContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (let i = 0; i < audioTracks.length; i++) {
+      const t = audioTracks[i];
+      const name = formatTrackName(i, t.label, t.language);
+      const isSelected = (i === selectedAudioTrackIndex || t.enabled);
+
+      const card = document.createElement('div');
+      card.className = 'themed-track-card' + (isSelected ? ' active' : '');
+      card.dataset.index = i;
+      card.innerHTML = `
+        <div class="track-card-left">
+          <svg class="icon track-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          <span>${name}</span>
+        </div>
+        <span class="track-badge">${isSelected ? 'Active' : 'Select'}</span>
+      `;
+
+      card.addEventListener('click', () => {
+        if (!isHost) return;
+        selectedAudioTrackIndex = i;
+        for (let j = 0; j < audioTracks.length; j++) {
+          audioTracks[j].enabled = (j === i);
+        }
+        $('audioTrackSelect').value = String(i);
+        renderCustomAudioTracks(audioTracks);
+        console.log('Host switched to audio track:', i);
+        relayFromHost({ type: 'audio-track', index: i }, null);
+      });
+
+      container.appendChild(card);
+    }
+  }
+
   function detectAndPopulateTracks() {
-    if (!isHost || playbackMode !== 'local') {
+    if (!isHost) {
       hideTrackSelection();
       return;
     }
 
     const audioTracks = player.audioTracks;
-    if (audioTracks && audioTracks.length > 1) {
+    if (audioTracks && audioTracks.length > 0) {
       const sel = $('audioTrackSelect');
       sel.innerHTML = '';
       for (let i = 0; i < audioTracks.length; i++) {
@@ -303,6 +371,7 @@
         if (i === selectedAudioTrackIndex || t.enabled) opt.selected = true;
         sel.appendChild(opt);
       }
+      renderCustomAudioTracks(audioTracks);
       $('audioTrackGroup').hidden = false;
       $('trackSelectionPanel').hidden = false;
       console.log(`Host detected ${audioTracks.length} audio tracks.`);
@@ -321,6 +390,7 @@
     for (let i = 0; i < audioTracks.length; i++) {
       audioTracks[i].enabled = (i === selectedIdx);
     }
+    renderCustomAudioTracks(audioTracks);
     console.log('Host switched to audio track:', selectedIdx);
     relayFromHost({ type: 'audio-track', index: selectedIdx }, null);
   });
@@ -922,13 +992,12 @@
     $('localFilePrompt').hidden = true;
   });
 
-  // Host controls source changing
+  // Host controls source changing (only toggles UI input fields without resetting active playback)
   $('hostSourceSelect').addEventListener('change', (e) => {
     const mode = e.target.value;
     const isLocal = mode === 'local';
     $('hostTorrentWrapper').hidden = isLocal;
     $('hostLocalWrapper').hidden = !isLocal;
-    resetMediaTracksToDefault();
   });
 
   $('chooseHostLocalBtn').addEventListener('click', () => {
@@ -1074,9 +1143,13 @@
   // ---------- Page Refresh & Reload Protection ----------
   let userIsLeavingIntentional = false;
 
-  // Block keyboard refresh shortcuts (F5, Ctrl+R, Cmd+R, Ctrl+F5)
+  // Block keyboard refresh shortcuts (F5, Ctrl+R, Cmd+R, Ctrl+F5) across all keyboard layouts (Arabic, etc.)
   window.addEventListener('keydown', (e) => {
-    const isRefreshKey = e.key === 'F5' || (e.key.toLowerCase() === 'r' && (e.ctrlKey || e.metaKey));
+    const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+    const isRKey = e.code === 'KeyR' || e.keyCode === 82 || (e.key && e.key.toLowerCase() === 'r') || e.key === 'ق';
+    const isF5Key = e.key === 'F5' || e.code === 'F5' || e.keyCode === 116;
+    const isRefreshKey = isF5Key || (isCtrlOrCmd && isRKey);
+
     if (isRefreshKey) {
       const isRoomActive = !$('room').hidden;
       if (isRoomActive) {
@@ -1085,7 +1158,7 @@
         console.warn('SyncWatch blocked page refresh shortcut during an active session.');
       }
     }
-  });
+  }, true);
 
   // ---------- Host Disconnect Broadcast ----------
   function handleHostLeave() {
@@ -1149,4 +1222,72 @@
       hideLeaveModal();
     }
   });
+
+  // ---------- Custom Themed UI Controls Handlers ----------
+  
+  // Landing source card clicks
+  document.querySelectorAll('#landingSourceCards .source-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('#landingSourceCards .source-card').forEach((c) => c.classList.remove('active'));
+      card.classList.add('active');
+      const val = card.dataset.value;
+      const sel = $('roomModeSelect');
+      if (sel && sel.value !== val) {
+        sel.value = val;
+        sel.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+
+  // Host source segmented control clicks
+  document.querySelectorAll('#hostSourceSegment .segment-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#hostSourceSegment .segment-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      const val = btn.dataset.value;
+      const sel = $('hostSourceSelect');
+      if (sel && sel.value !== val) {
+        sel.value = val;
+        sel.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+
+  // Max members custom dropdown
+  const maxWrapper = $('maxMembersCustom');
+  const maxBtn = $('maxMembersBtn');
+  const maxMenu = $('maxMembersMenu');
+  const maxLabel = $('maxMembersValLabel');
+
+  if (maxBtn && maxMenu && maxWrapper) {
+    maxBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isClosed = maxMenu.hidden;
+      maxMenu.hidden = !isClosed;
+      maxWrapper.classList.toggle('open', isClosed);
+    });
+
+    maxMenu.querySelectorAll('.themed-option').forEach((opt) => {
+      opt.addEventListener('click', () => {
+        const val = opt.dataset.value;
+        maxMenu.querySelectorAll('.themed-option').forEach((o) => o.classList.remove('active'));
+        opt.classList.add('active');
+        if (maxLabel) maxLabel.textContent = `${val} Members`;
+        const sel = $('maxMembers');
+        if (sel) {
+          sel.value = val;
+          sel.dispatchEvent(new Event('change'));
+        }
+        maxMenu.hidden = true;
+        maxWrapper.classList.remove('open');
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!maxWrapper.contains(e.target)) {
+        maxMenu.hidden = true;
+        maxWrapper.classList.remove('open');
+      }
+    });
+  }
 })();
