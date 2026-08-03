@@ -1,5 +1,7 @@
 # SyncWatch — Real-Time Synchronized Torrent & Local Video Player
 
+![SyncWatch Banner](public/SyncWatch-banner.jpg)
+
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.19-blue)](https://expressjs.com/)
 [![WebTorrent](https://img.shields.io/badge/WebTorrent-1.9-red)](https://webtorrent.io/)
@@ -17,16 +19,16 @@
 ## Key Features
 
 - **Synchronized Playback (WebRTC)** — Real-time frame-accurate synchronization of play, pause, and seek events directly between members' browsers using PeerJS and WebRTC data channels.
+- **Custom-Themed UI Controls** — Modern dark-glass controls for Playback Source selection (interactive cards on landing, segmented toggle in room), Max Members custom dropdown popover with group capacity tags (`Duo`, `Small Group`, `Max Default`), and themed Audio Track cards with active status badges.
 - **Dual Playback Modes** — Stream video files directly from the BitTorrent network while downloading, or sync a local video file (bypasses torrent streaming entirely with zero server overhead).
+- **Playback Retention on Source Toggle** — Toggling source modes in the sidebar updates input options without interrupting active video playback. Video playback only reloads when a new torrent magnet is loaded or a new file is chosen.
+- **Multi-Track Audio Support (Torrent & Local)** — Detects and renders multi-track audio options for both local video files and WebTorrent streams inside Host Controls. Selections are broadcasted in real time to all room members.
 - **3-Panel Centered Room Layout** — Modern 3-column obsidian interface featuring a left-side Room Chat (`310px`), a centered Video Stage, and a right-side Sidebar (`320px`) for Members & Host Controls.
-- **Host-Only Multi-Track Audio Selection** — When in local file mode, multi-track audio detection is restricted to the host inside Host Controls. Host selection is broadcasted in real time to all room members.
-- **Automatic Media Track Reset** — Subtitles and audio track choices automatically reset to default whenever the host changes the torrent magnet link, local video file, or playback source mode.
 - **Inactivity Controls & Cursor Auto-Hide** — Floating player controls (Subtitles toggle, Mute, Fullscreen) and mouse cursor automatically fade out after 2.5 seconds of mouse inactivity.
-- **Page Refresh Protection & Admin Disconnect** — Suppresses accidental `F5` / `Ctrl+R` reloads, provides a custom themed "Leave Room" confirmation modal, and automatically disconnects all guests with a "Room Closed" dialog if the host leaves.
+- **Multilingual Refresh Protection & Admin Disconnect** — Intercepts `F5` / `Ctrl+R` / `Cmd+R` refresh shortcuts across all keyboard languages (English, Arabic, Cyrillic, etc.) using physical key codes, provides a custom themed "Leave Room" confirmation modal, and automatically disconnects all guests with a "Room Closed" dialog if the host leaves.
 - **P2P Subtitle Sharing & Joining Member Sync** — Supports `.srt` and `.vtt` subtitle files uploaded by the host. Subtitles and elapsed video time are automatically synchronized for members joining ongoing rooms.
-- **MKV Compatibility Warnings** — Explicit warning notifications that MKV files are unsupported due to browser audio codec limitations (MP4 and WebM recommended).
 - **Auto-Stop Seeding (100% Download)** — The backend server automatically stops seeding and terminates peer connections as soon as a torrent download reaches 100%, shifting transparently to local disk streaming to conserve upload bandwidth.
-- **Advanced WebRTC Traversal** — Configurable custom STUN/TURN servers (e.g. from Metered.ca or self-hosted COTURN) to traverse strict firewalls and symmetric NATs, saved locally in `localStorage`.
+- **Advanced WebRTC Traversal & Z-Index Layering** — Configurable custom STUN/TURN servers (e.g. from Metered.ca or self-hosted COTURN) to traverse strict firewalls and symmetric NATs, saved locally in `localStorage`. Elevated dropdown popovers float cleanly over the WebRTC accordion.
 
 ---
 
@@ -62,7 +64,7 @@
 
    > 💡 **Note:** Keep the terminal window open while watching — closing it stops your local video streaming server.
 
-   > ⚠️ **Audio Track Switching:** The `audioTracks` API is natively supported in Safari. In Chrome/Edge, enable `chrome://flags/#enable-experimental-web-platform-features`. In non-supporting browsers, the audio track dropdown hides gracefully.
+   > ⚠️ **Audio Track Switching:** The `audioTracks` API is natively supported in Safari. In Chrome/Edge, enable `chrome://flags/#enable-experimental-web-platform-features`. In non-supporting browsers, the audio track panel hides gracefully.
 
 ---
 
@@ -70,15 +72,18 @@
 
 ```
 SyncWatch/
-├── README.md              # Project documentation
+├── README.md              # Project documentation (Markdown)
+├── README.txt             # Plain text run instructions
 ├── server.js              # Express video streaming & WebTorrent download server
 ├── package.json           # Dependencies and scripts
 ├── downloads/             # Directory where downloaded torrents are stored
 └── public/
-    ├── favicon.svg        # Accent gold vector favicon
+    ├── favicon.ico        # High-resolution ICO favicon
+    ├── favicon.png        # PNG icon asset & header logo image
+    ├── SyncWatch-logo-icon.png  # Brand logo source image
     ├── index.html         # User Interface 3-panel layout and modal dialogs
     ├── style.css          # Visual styling, glassmorphic obsidian theme, responsive layout
-    └── app.js             # WebRTC signaling, player sync, track reset, and inactivity listeners
+    └── app.js             # WebRTC signaling, custom controls, player sync, and refresh protection
 ```
 
 ---

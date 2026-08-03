@@ -61,32 +61,40 @@ you can use local mode:
 5. Playback events (play, pause, seek) will sync instantly with zero server
    bandwidth usage.
 
-C. HOST-ONLY AUDIO TRACK SELECTION (LOCAL FILES ONLY):
-------------------------------------------------------
-If your local video file contains multiple audio tracks:
-1. The host will see an "Audio Track" dropdown inside Host Controls.
+C. HOST-ONLY AUDIO TRACK SELECTION (TORRENTS & LOCAL FILES):
+------------------------------------------------------------
+If your video file or torrent stream contains multiple audio tracks:
+1. The host will see an "Audio Track" section inside Host Controls with 
+   themed audio track cards.
 2. Only the room host can switch audio tracks; selections are broadcasted
    in real time to all room members.
-3. Subtitles are not embedded — use the "Subtitle File" button in Host 
-   Controls to load external .srt or .vtt subtitle files.
+3. External subtitles (.srt or .vtt) can be loaded via the "Subtitle File" 
+   button in Host Controls.
 
 Note: Audio track switching requires browser support for the audioTracks API.
       Safari supports it natively. Chrome/Edge users need to enable the flag:
       chrome://flags/#enable-experimental-web-platform-features
-      If your browser doesn't support it, the audio dropdown simply won't appear.
+      If your browser doesn't support it, the audio panel simply won't appear.
 
 ------------------------------------------------------------------------
 4. KEY FEATURES & COMPATIBILITY
 ------------------------------------------------------------------------
-- 3-PANEL CENTERED LAYOUT: Left-side Room Chat (fixed 540px height),
-  centered Video Stage, and right-side Sidebar for Members & Host Controls.
+- CUSTOM-THEMED UI CONTROLS: Dark-glass controls for source selection,
+  Max Members custom popover dropdown with capacity tags, and themed Audio Track cards.
+- PLAYBACK RETENTION ON SOURCE TOGGLE: Changing the sidebar source selector 
+  toggles input UI fields without resetting or interrupting the active video playing.
+- 3-PANEL CENTERED LAYOUT: Left-side Room Chat, centered Video Stage, and
+  right-side Sidebar for Members & Host Controls.
 - MEDIA TRACK RESET: Subtitle and audio track selections automatically 
-  reset to default when the host changes video source or magnet link.
+  reset when the host loads a new video file or magnet link.
 - INACTIVITY AUTO-HIDE: Video overlay controls and mouse cursor hide 
   automatically after 2.5 seconds of mouse inactivity.
-- REFRESH & DISCONNECT PROTECTION: Suppresses accidental page reloads (F5/Ctrl+R),
+- MULTILINGUAL REFRESH PROTECTION: Intercepts accidental page reloads (F5/Ctrl+R)
+  across all keyboard languages (English, Arabic, Cyrillic, etc.) using physical key codes,
   provides a custom themed "Leave Room" confirmation modal, and shows a
   styled "Room Closed" dialog to guests if the host leaves.
+- BRAND LOGO & FAVICON: High-res custom PNG/ICO favicon set (favicon.png, favicon.ico)
+  and brand logo image in header bar.
 - SUPPORTED FORMATS: Standard MP4 and WebM video files are supported.
 - UNSUPPORTED FORMATS: MKV (.mkv) files are NOT supported due to browser 
   audio codec limitations (AC-3/DTS). Please select MP4 or WebM files.
